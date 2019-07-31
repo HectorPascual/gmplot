@@ -45,6 +45,7 @@ class GoogleMapPlotter(object):
         self.coloricon = os.path.join(os.path.dirname(__file__), 'markers/%s.png')
         self.color_dict = mpl_color_map
         self.html_color_codes = html_color_codes
+        self.id = 0
 
     @classmethod
     def from_geocode(cls, location_string, zoom=13):
@@ -62,12 +63,13 @@ class GoogleMapPlotter(object):
     def grid(self, slat, elat, latin, slng, elng, lngin):
         self.gridsetting = [slat, elat, latin, slng, elng, lngin]
 
-    def marker(self, lat, lng, color='#FF0000', c=None, title="no implementation"):
+    def marker(self, lat, lng, color='#FF0000', c=None, title="no implementation", label=""):
         if c:
             color = c
         color = self.color_dict.get(color, color)
         color = self.html_color_codes.get(color, color)
-        self.points.append((lat, lng, color[1:], title))
+        self.points.append((lat, lng, color[1:], title, label, self.id))
+        self.id += 1
 
     def scatter(self, lats, lngs, color=None, size=None, marker=True, c=None, s=None, symbol='o', **kwargs):
         color = color or c
@@ -296,7 +298,7 @@ class GoogleMapPlotter(object):
 
     def write_points(self, f):
         for point in self.points:
-            self.write_point(f, point[0], point[1], point[2], point[3])
+            self.write_point(f, point[0], point[1], point[2], point[3], point[4], point[5])
 
     def write_circles(self, f):
         for circle, settings in self.circles:
@@ -327,17 +329,21 @@ class GoogleMapPlotter(object):
             '\t\tvar map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);\n')
         f.write('\n')
 
-    def write_point(self, f, lat, lon, color, title):
+    def write_point(self, f, lat, lon, color, title, label, id):
         f.write('\t\tvar latlng = new google.maps.LatLng(%f, %f);\n' %
                 (lat, lon))
         f.write('\t\tvar img = new google.maps.MarkerImage(\'%s\');\n' %
                 (self.coloricon % color))
-        f.write('\t\tvar marker = new google.maps.Marker({\n')
-        f.write('\t\ttitle: "%s",\n' % title)
-        f.write('\t\ticon: img,\n')
-        f.write('\t\tposition: latlng\n')
+        f.write('\t\tvar marker_%d = new google.maps.Marker({\n'%(id))
+        f.write('\t\t\ttitle: "%s",\n' % title)
+
+        f.write('\t\t\tposition: latlng\n')
         f.write('\t\t});\n')
-        f.write('\t\tmarker.setMap(map);\n')
+        f.write('\t\tvar infowindow_%d = new google.maps.InfoWindow({\n' % id)
+        f.write('\t\t\tcontent: %s\n\t\t});\n' % (title+label))
+        f.write("\t\tmarker_%d.addListener('click', function() {\n"% id)
+        f.write('\t\t\tinfowindow_%d.open(map, marker_%d);\n\t\t});\n'% (id, id))
+        f.write('\t\tmarker_%d.setMap(map);\n'% id)
         f.write('\n')
 
     def write_symbol(self, f, symbol, settings):
