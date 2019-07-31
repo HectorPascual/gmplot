@@ -340,7 +340,7 @@ class GoogleMapPlotter(object):
         f.write('\t\t\tposition: latlng\n')
         f.write('\t\t});\n')
         f.write('\t\tvar infowindow_%d = new google.maps.InfoWindow({\n' % id)
-        f.write('\t\t\tcontent: %s\n\t\t});\n' % (title+label))
+        f.write('\t\t\tcontent: "%s"\n\t\t});\n' % (title+label))
         f.write("\t\tmarker_%d.addListener('click', function() {\n"% id)
         f.write('\t\t\tinfowindow_%d.open(map, marker_%d);\n\t\t});\n'% (id, id))
         f.write('\t\tmarker_%d.setMap(map);\n'% id)
